@@ -18,7 +18,7 @@ def main():
 
     # 30, [1,5] means 5 unit time is needed for product 1 on deadline 30th.
     all_orders = [[60,[[0, 5], [2, 6]]],
-                  [40,[[0, 15], [1, 10], [2,10]]],
+                  [90,[[0, 15], [1, 10], [2,10]]],
                   [70,[[0, 7],[2, 4]]],
                   [25,[[1, 7],[2, 8]]],
                   [30,[[0, 9],[1, 5],[2, 2]]],
@@ -28,6 +28,13 @@ def main():
                [0, 0],
                [0, 0],
                [0, 0, 0],
+               ]
+
+    products = [[0, 2],
+                [0, 1, 2],
+                [0, 2],
+                [1, 2],
+                [0, 1, 2]
                ]
     setup_times = [3, 2, 5]
 
@@ -92,25 +99,19 @@ def main():
         solver.Add(disj)
     print("Machine Jobs".center(40, "*"))
     print(machine_jobs)
-
+    print("Sequences: ")
+    print(all_sequences)
     # Setting Objective
     # To minimize setup lengh of 
-
-    obj_var = solver.Max([all_tasks[(i, len(machines[i])-1)].EndExpr() for i, order in enumerate(orders)])
-    objective_monitor = solver.Minimize(obj_var, 1)
-  # Create search phases.
+    # Create search phases.
     sequence_phase = solver.Phase([all_sequences[i] for i in all_machines],
                                 solver.SEQUENCE_DEFAULT)
-    vars_phase = solver.Phase([obj_var],
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE)
-    main_phase = solver.Compose([sequence_phase, vars_phase])
+    main_phase = solver.Compose([sequence_phase])
   # Create the solution collector.
     collector = solver.LastSolutionCollector()
 
   # Add the interesting variables to the SolutionCollector.
     collector.Add(all_sequences)
-    collector.AddObjective(obj_var)
 
     for i in all_machines:
         sequence = all_sequences[i];
@@ -121,11 +122,6 @@ def main():
             collector.Add(t.EndExpr().Var())
       # Solve the problem.
     disp_col_width = 10
-    if solver.Solve(main_phase, [objective_monitor, collector]):
-        print("\nOptimal Schedule Length:", collector.ObjectiveValue(0), "\n")
-        sol_line = ""
-        sol_line_tasks = ""
-        print("Optimal Schedule", "\n")
 
     for i in all_machines:
         seq = all_sequences[i]
@@ -153,11 +149,6 @@ def main():
     print("Time Intervals for Tasks\n")
     print(sol_line)
     
-
-
-    
-
-
 if __name__=='__main__':
     main()
 
