@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+from operator import attrgetter
 from collections import namedtuple
 # Values == requiredTime
 # weights =  deadline
@@ -27,19 +27,33 @@ def solve(input_data):
         requiredTimes.append(int(parts[0]))
         deadlines.append(int(parts[1]))
 
-    # a trivial greedy algorithm for filling the knapsack
-    # it takes items in-order until the knapsack is full
-    # value = 0
-    # weight = 0
-    # taken = [0]*len(items)
-    # update values to give priority to least deadlines
-    # values = [(capacity-value) for value in deadlines]
-
     [value, taken] = ProcessOrder( deadlines, requiredTimes, capacity)
-    
     # prepare the solution in the specified output format
+
+    combined_items = []
+    for i, item in enumerate(taken):
+        taken_order=[]
+        if item == 1:
+            combined_items.append(Item(i, requiredTimes[i], deadlines[i]))
+    print(combined_items)
+    # Fix Scheduling time
+    # Sort as per deadline
+    # 1. First endDate set to time duration of that order
+    # 2. Add next time duration and so on
+    sorted_deadlines = sorted(combined_items, key = attrgetter('deadline'))
+    print(sorted_deadlines)
+    data_for_graph = []
+    for i,item in enumerate(sorted_deadlines):
+        if i==0:
+            data_for_graph.append([item.index, 0,
+            item.requiredTime])
+        else:
+            data_for_graph.append([item.index, sorted_deadlines[i-1].requiredTime,
+             sorted_deadlines[i-1].requiredTime+item.requiredTime])
     output_data = str(value) + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, taken))
+    print(data_for_graph)
+    plot_schedule(data_for_graph)
     return output_data
 
 def zeros(rows, cols):
@@ -75,44 +89,22 @@ def ProcessOrder(d, r, K):
                 c[i][j]=c[i-1][j]
     return [c[n-1][K], getUsedItems(r,c)]
 
-def plot_diagram():
-    import matplotlib.pyplot as plt
+def plot_schedule(process_orders):
     import numpy as np
-
-    data = [[1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0],
-            [0, 0, 2, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0], 
-            [0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 3, 0, 3]]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.axes.get_yaxis().set_visible(False)
-    ax.set_aspect(1)
-
-    def avg(a, b):
-        return (a + b) / 2.0
-
-    for y, row in enumerate(data):
-        for x, col in enumerate(row):
-            x1 = [x, x+1]
-            y1 = [0, 0]
-            y2 = [1, 1]
-            if col == 1:
-                plt.fill_between(x1, y1, y2=y2, color='red')
-                plt.text(avg(x1[0], x1[1]), avg(y1[0], y2[0]), "A", 
-                        horizontalalignment='center',
-                        verticalalignment='center')
-            if col == 2:
-                plt.fill_between(x1, y1, y2=y2, color='orange')
-                plt.text(avg(x1[0], x1[0]+1), avg(y1[0], y2[0]), "B", 
-                        horizontalalignment='center',
-                        verticalalignment='center')
-            if col == 3:
-                plt.fill_between(x1, y1, y2=y2, color='yellow')
-                plt.text(avg(x1[0], x1[0]+1), avg(y1[0], y2[0]), "C", 
-                        horizontalalignment='center',
-                        verticalalignment='center')
-
-    plt.ylim(1, 0)
+    from matplotlib import pyplot as plt
+    colors = ["r","g","b","y"]
+    values = np.array(process_orders)
+    # values = np.array([[data[name] for name in order] for data,order in zip(dataset, data_orders)])
+    bottoms = np.arange(len([0]))
+    print(process_orders)
+    for i, order in enumerate(process_orders):
+        value = order[2]
+        left = order[1]
+        plt.bar(left=left, height=0.01, width=value, bottom=bottoms, 
+                color=colors[-i], orientation="horizontal", label='Order_%i'%order[0])
+    plt.yticks(bottoms+0.4, ["data %d" % (t+1) for t in bottoms])
+    plt.legend(loc="best", bbox_to_anchor=(1.0, 1.00))
+    plt.subplots_adjust(right=0.85)
     plt.show()
     
 if __name__ == '__main__':
@@ -124,5 +116,3 @@ if __name__ == '__main__':
         print(solve(input_data))
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
-    plot_diagram()
-
