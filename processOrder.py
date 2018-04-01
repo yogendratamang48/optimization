@@ -176,8 +176,6 @@ def optimize_product(taken_products, products):
             common_products.append(current_products & next_products)
     common_products = list(common_products)
 
-    print("Common Products")
-    print(list(common_products))
     # 2. find product of maximum setUpTime
     transitions = []
     for i, common in enumerate(common_products):
@@ -185,8 +183,6 @@ def optimize_product(taken_products, products):
             common = list(common)
             maxProductID=getProductWithMaxSetupTime(common, products)
             transitions.append([maxProductID])
-    print("Transitions")
-    print(transitions)
 
     # Find Product with minimum setUpTime from remaining productID for every
     # order
@@ -199,9 +195,6 @@ def optimize_product(taken_products, products):
             otherProducts.append([order[3] for order in orders if order[0]==orderID and order[3] not in transitions[i-1]])
         else:
             otherProducts.append([order[3] for order in orders if order[0]==orderID and order[3] not in transitions[i] and order[3] not in transitions[i-1]])
-    print("Other Products")
-    print(otherProducts)
-    print("Schedule: ")
     slots = []
     combined_sequence = [ ]
     for i, other in enumerate(otherProducts):
@@ -225,16 +218,9 @@ def optimize_product(taken_products, products):
             except:
                 pass
         combined_sequence.append(other)
-    print("Combined Sequence")
+    print("Run as below: Products in following Sequence")
     print(combined_sequence)
     
-
-
-        
-
-
-
-        
     
 if __name__ == '__main__':
     import sys
@@ -245,16 +231,8 @@ if __name__ == '__main__':
         with open("data/products.txt", 'r') as product_file:
             product_data= product_file.read()
         products, orders, processed_orders, combined_orders= get_clean_data(input_data, product_data)
-        print("Products")
-        print(products)
-        print("Processed Orders")
-        print(processed_orders)
-        print("Combined Orders")
-        print(combined_orders)
         taken=solve(combined_orders)
         taken_products = [order for order in processed_orders if taken[order[0]]==1]
-        print("TAKEN ORDERS: ")
-        print(taken_products)
         schedule=optimize_product(taken_products, products)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
