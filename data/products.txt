@@ -1,0 +1,4 @@
+ProductName,Setuptime,unitProductionTime,index
+Knife,2,5,0
+Spoon,3,4,1
+Fork,4,8,2

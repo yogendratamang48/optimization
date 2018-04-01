@@ -2,30 +2,23 @@
 # -*- coding: utf-8 -*-
 from operator import attrgetter
 from collections import namedtuple
+# import pudb
+# pudb.set_trace()
 # Values == requiredTime
 # weights =  deadline
-Item = namedtuple("Order", ['index','requiredTime', 'deadline'])
+Item = namedtuple("Item", ['index','requiredTime', 'deadline'])
+Product = namedtuple('Product',['index', 'name', 'setupTime', 'unitProductionTime'])
+Order = namedtuple('Order',['orderID','productIndex', 'quantity', 'deadline', 'workIndex'])
 
-def solve(input_data):
+
+def solve(input_data, capacity=None):
     # Modify this code to run your optimization algorithm
 
     # parse the input
-    lines = input_data.split('\n')
-
-    firstLine = lines[0].split()
-    item_count = int(firstLine[0])
-    capacity = int(firstLine[1])
-    requiredTimes = []
-    deadlines = []
-
-    items = []
-
-    for i in range(1, item_count+1):
-        line = lines[i]
-        parts = line.split()
-        items.append(Item(i-1, int(parts[0]), int(parts[1])))
-        requiredTimes.append(int(parts[0]))
-        deadlines.append(int(parts[1]))
+    deadlines = [data[2] for data in input_data]
+    requiredTimes = [data[1] for data in input_data]
+    if capacity is None:
+        capacity=max(deadlines)
 
     [value, taken] = ProcessOrder( deadlines, requiredTimes, capacity)
     # prepare the solution in the specified output format
@@ -55,7 +48,8 @@ def solve(input_data):
             data_for_graph.append([item.index, data_for_graph[i-1][-1],
              data_for_graph[i-1][-1]+item.requiredTime])
     print("Data For Graph")
-    plot_schedule(data_for_graph)
+    # plot_schedule(data_for_graph)
+    return taken
 
 def zeros(rows, cols):
     zeroList=[]
@@ -90,6 +84,17 @@ def ProcessOrder(d, r, K):
                 c[i][j]=c[i-1][j]
     return [c[n-1][K], getUsedItems(r,c)]
 
+def ProcessProdcut(d, r, K):
+    n = len(d)
+    c=zeros(n, K+1)
+    for i in range(n): # i in [0, 1] if there are two items
+        for j in range(K+1): # j in [0, 1, 2...11] if knapsack is of size 11
+            if r[i]<=j:
+                c[i][j]=max(r[i]+c[i-1][j-r[i]], c[i-1][j])
+            else:
+                c[i][j]=c[i-1][j]
+    return [c[n-1][K], getUsedItems(r,c)]
+
 def plot_schedule(process_orders):
     import numpy as np
     from matplotlib import pyplot as plt
@@ -107,6 +112,38 @@ def plot_schedule(process_orders):
     plt.legend(loc="best", bbox_to_anchor=(1.0, 1.00))
     plt.subplots_adjust(right=0.85)
     plt.show()
+
+def get_clean_data(order_data, product_data):
+    product_lines = product_data.split('\n')
+    product_count = len(product_lines)-1
+    products = []
+    for i in range(1, product_count):
+        lines = product_lines[i].split(',')
+        products.append(Product(int(lines[3]), lines[0], int(lines[1]), int(lines[2])))
+
+    order_lines = order_data.split('\n')
+    order_count = len(order_lines)-1
+    orders = []
+    for i in range(1, order_count):
+        lines = order_lines[i].split(',')
+        orders.append(Order(int(lines[0]), int(lines[1]), int(lines[2]),
+                            int(lines[3]), int(lines[4])))
+    processed_orders = []
+    for order in orders:
+        # in format Order(requiredTime, deadline)
+        product = [p for p in products if p.index == order.productIndex]
+        processed_orders.append([order.orderID,int(order.quantity/product[0].unitProductionTime + product[0].setupTime), order.deadline])
+
+        # Combining order wise
+    combined_orders = []
+    for orderID in set([order[0] for order in processed_orders]):
+        combined_orders.append([orderID,
+                                sum([order[1] for order in processed_orders if order[0]==orderID]), #Required Time
+                                ([order[2] for order in processed_orders if order[0]==orderID])[0], # Deadlines
+                                    ])
+    
+    return products, orders, processed_orders, combined_orders 
+
     
 if __name__ == '__main__':
     import sys
@@ -114,6 +151,20 @@ if __name__ == '__main__':
         file_location = sys.argv[1].strip()
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
-        solve(input_data)
+        with open("data/products.txt", 'r') as product_file:
+            product_data= product_file.read()
+        products, orders, processed_orders, combined_orders= get_clean_data(input_data, product_data)
+        print("Processed Orders")
+        print(processed_orders)
+        print("Combined Orders")
+        print(combined_orders)
+        taken=solve(combined_orders)
+        taken_products = [order for order in processed_orders if taken[order[0]]==1]
+        print("TAKEN ORDERS: ")
+        print(taken_products)
+                
+
+
+
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
