@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 from operator import attrgetter
 from collections import namedtuple
-# import pudb
-# pudb.set_trace()
+from collections import OrderedDict
+import pudb
+pudb.set_trace()
 # Values == requiredTime
 # weights =  deadline
 Item = namedtuple("Item", ['index','requiredTime', 'deadline'])
@@ -48,6 +49,7 @@ def solve(input_data, capacity=None):
             data_for_graph.append([item.index, data_for_graph[i-1][-1],
              data_for_graph[i-1][-1]+item.requiredTime])
     print("Data For Graph")
+    print(data_for_graph)
     # plot_schedule(data_for_graph)
     return taken
 
@@ -74,23 +76,28 @@ def getUsedItems(w, c):
     return marked
 
 def ProcessOrder(d, r, K):
+    # Maximize Machine Usage
     n = len(d)
     c=zeros(n, K+1)
     for i in range(n): # i in [0, 1] if there are two items
-        for j in range(K+1): # j in [0, 1, 2...11] if knapsack is of size 11
+        for j in range(K+1): # j in [0, 1, 2...11] if deadline is 11
             if r[i]<=j:
                 c[i][j]=max(r[i]+c[i-1][j-r[i]], c[i-1][j])
             else:
                 c[i][j]=c[i-1][j]
     return [c[n-1][K], getUsedItems(r,c)]
 
-def ProcessProdcut(d, r, K):
-    n = len(d)
+def ProcessProdcut(d, r, s, K):
+    # Minimize Machine Setup
+    # d = 
+    # r=
+    # K=Capacity
+    n = len(d) # number of orders
     c=zeros(n, K+1)
     for i in range(n): # i in [0, 1] if there are two items
-        for j in range(K+1): # j in [0, 1, 2...11] if knapsack is of size 11
+        for j in range(K+1): # j in [0, 1, 2...11] if deadline is 11
             if r[i]<=j:
-                c[i][j]=max(r[i]+c[i-1][j-r[i]], c[i-1][j])
+                c[i][j]=min(r[i]+c[i-1][j-r[i]], c[i-1][j])
             else:
                 c[i][j]=c[i-1][j]
     return [c[n-1][K], getUsedItems(r,c)]
@@ -100,7 +107,6 @@ def plot_schedule(process_orders):
     from matplotlib import pyplot as plt
     colors = ["r","g","b","y"]
     values = np.array(process_orders)
-    # values = np.array([[data[name] for name in order] for data,order in zip(dataset, data_orders)])
     bottoms = np.arange(len([0]))
     print(process_orders)
     for i, order in enumerate(process_orders):
@@ -132,7 +138,9 @@ def get_clean_data(order_data, product_data):
     for order in orders:
         # in format Order(requiredTime, deadline)
         product = [p for p in products if p.index == order.productIndex]
-        processed_orders.append([order.orderID,int(order.quantity/product[0].unitProductionTime + product[0].setupTime), order.deadline])
+        processed_orders.append([order.orderID,int(order.quantity/product[0].unitProductionTime
+                                                   + product[0].setupTime),
+                                 order.deadline, order[1] ])
 
         # Combining order wise
     combined_orders = []
@@ -144,6 +152,89 @@ def get_clean_data(order_data, product_data):
     
     return products, orders, processed_orders, combined_orders 
 
+def getProductWithMaxSetupTime(common, products):
+    max_value=max([product.setupTime for product in products if product.index in common])
+    productID = [product.index for product in products if product.setupTime==max_value and product.index in common]
+    return productID[0]
+
+def getProductWithMinSetupTime(remaining, products):
+    max_value=max([product.setupTime for product in products if product.index in remaining])
+    productID = [product.index for product in products if product.setupTime==max_value and product.index in remaining]
+    return productID[0]
+
+def optimize_product(taken_products, products):
+    # get Order Id in sequence
+    orderIDs = list(OrderedDict.fromkeys([order[0] for order in taken_products]))
+    # Find Common Product between Order1 and following Order 2
+    print("Order IDS")
+    print(orderIDs)
+    common_products = []
+    for i, orderID in enumerate(orderIDs):
+        if i<(len(orderIDs)-1):
+            current_products = set([taken[3] for taken in taken_products if taken[0]==orderID])
+            next_products = set([taken[3] for taken in taken_products if taken[0]==orderIDs[i+1]])
+            common_products.append(current_products & next_products)
+    common_products = list(common_products)
+
+    print("Common Products")
+    print(list(common_products))
+    # 2. find product of maximum setUpTime
+    transitions = []
+    for i, common in enumerate(common_products):
+        if common not in transitions:
+            common = list(common)
+            maxProductID=getProductWithMaxSetupTime(common, products)
+            transitions.append([maxProductID])
+    print("Transitions")
+    print(transitions)
+
+    # Find Product with minimum setUpTime from remaining productID for every
+    # order
+    orders = taken_products
+    otherProducts=[]
+    for i, orderID in enumerate(orderIDs):
+        if i ==0:
+            otherProducts.append([order[3] for order in orders if order[0]==orderID and order[3] not in transitions[i]])
+        elif i==(len(orderIDs)-1):
+            otherProducts.append([order[3] for order in orders if order[0]==orderID and order[3] not in transitions[i-1]])
+        else:
+            otherProducts.append([order[3] for order in orders if order[0]==orderID and order[3] not in transitions[i] and order[3] not in transitions[i-1]])
+    print("Other Products")
+    print(otherProducts)
+    print("Schedule: ")
+    slots = []
+    combined_sequence = [ ]
+    for i, other in enumerate(otherProducts):
+        if i==0:
+            try:
+                other.append(transitions[i][0])
+            except:
+                pass
+        elif i == (len(otherProducts)-1):
+            try:
+                other.insert(0, transitions[i-1][0])
+            except:
+                pass
+        else:
+            try:
+                other.insert(0, transitions[i-1][0])
+            except:
+                pass
+            try:
+                other.append(transitions[i][0])
+            except:
+                pass
+        combined_sequence.append(other)
+    print("Combined Sequence")
+    print(combined_sequence)
+    
+
+
+        
+
+
+
+        
     
 if __name__ == '__main__':
     import sys
@@ -154,6 +245,8 @@ if __name__ == '__main__':
         with open("data/products.txt", 'r') as product_file:
             product_data= product_file.read()
         products, orders, processed_orders, combined_orders= get_clean_data(input_data, product_data)
+        print("Products")
+        print(products)
         print("Processed Orders")
         print(processed_orders)
         print("Combined Orders")
@@ -162,9 +255,6 @@ if __name__ == '__main__':
         taken_products = [order for order in processed_orders if taken[order[0]]==1]
         print("TAKEN ORDERS: ")
         print(taken_products)
-                
-
-
-
+        schedule=optimize_product(taken_products, products)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
