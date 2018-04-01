@@ -35,26 +35,27 @@ def solve(input_data):
         taken_order=[]
         if item == 1:
             combined_items.append(Item(i, requiredTimes[i], deadlines[i]))
-    print(combined_items)
     # Fix Scheduling time
     # Sort as per deadline
     # 1. First endDate set to time duration of that order
     # 2. Add next time duration and so on
     sorted_deadlines = sorted(combined_items, key = attrgetter('deadline'))
+    print("RESULTS:")
+    output_data = str(value) + ' ' + str(0) + '\n'
+    output_data += ' '.join(map(str, taken))
+    print(output_data)
     print(sorted_deadlines)
+    print("For Graph: ")
     data_for_graph = []
     for i,item in enumerate(sorted_deadlines):
         if i==0:
             data_for_graph.append([item.index, 0,
             item.requiredTime])
         else:
-            data_for_graph.append([item.index, sorted_deadlines[i-1].requiredTime,
-             sorted_deadlines[i-1].requiredTime+item.requiredTime])
-    output_data = str(value) + ' ' + str(0) + '\n'
-    output_data += ' '.join(map(str, taken))
-    print(data_for_graph)
+            data_for_graph.append([item.index, data_for_graph[i-1][-1],
+             data_for_graph[i-1][-1]+item.requiredTime])
+    print("Data For Graph")
     plot_schedule(data_for_graph)
-    return output_data
 
 def zeros(rows, cols):
     zeroList=[]
@@ -113,6 +114,6 @@ if __name__ == '__main__':
         file_location = sys.argv[1].strip()
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
-        print(solve(input_data))
+        solve(input_data)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
