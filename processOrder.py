@@ -3,8 +3,8 @@
 from operator import attrgetter
 from collections import namedtuple
 from collections import OrderedDict
-import pudb
-pudb.set_trace()
+# import pudb
+# pudb.set_trace()
 # Values == requiredTime
 # weights =  deadline
 Item = namedtuple("Item", ['index','requiredTime', 'deadline'])
