@@ -35,11 +35,9 @@ def solve(input_data, capacity=None):
     # 2. Add next time duration and so on
     sorted_deadlines = sorted(combined_items, key = attrgetter('deadline'))
     print("RESULTS:")
-    output_data = str(value) + ' ' + str(0) + '\n'
-    output_data += ' '.join(map(str, taken))
+    output_data = str(value) + ' ' + str(0)
+    # output_data += ' '.join(map(str, taken))
     print(output_data)
-    print(sorted_deadlines)
-    print("For Graph: ")
     data_for_graph = []
     for i,item in enumerate(sorted_deadlines):
         if i==0:
@@ -48,8 +46,6 @@ def solve(input_data, capacity=None):
         else:
             data_for_graph.append([item.index, data_for_graph[i-1][-1],
              data_for_graph[i-1][-1]+item.requiredTime])
-    print("Data For Graph")
-    print(data_for_graph)
     # plot_schedule(data_for_graph)
     return taken
 
@@ -166,7 +162,7 @@ def optimize_product(taken_products, products):
     # get Order Id in sequence
     orderIDs = list(OrderedDict.fromkeys([order[0] for order in taken_products]))
     # Find Common Product between Order1 and following Order 2
-    print("Order IDS")
+    print("We should run following ORDERS: ")
     print(orderIDs)
     common_products = []
     for i, orderID in enumerate(orderIDs):
@@ -218,7 +214,7 @@ def optimize_product(taken_products, products):
             except:
                 pass
         combined_sequence.append(other)
-    print("Run as below: Products in following Sequence")
+    print("PRODUCT Run Sequence")
     print(combined_sequence)
     
     
