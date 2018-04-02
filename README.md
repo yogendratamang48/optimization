@@ -14,5 +14,5 @@ This file is equivalen to `enum` type. It lists different produt types.
 By default, system takes maximum value of `deadline` from orders. You can set inside `solve()` method.
 
 ## Output ##
-![Output](images/output.pnt)
+![Output](images/output.png)
 
