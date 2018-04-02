@@ -3,6 +3,8 @@
 from operator import attrgetter
 from collections import namedtuple
 from collections import OrderedDict
+import numpy as np
+from matplotlib import pyplot as plt
 # import pudb
 # pudb.set_trace()
 # Values == requiredTime
@@ -98,21 +100,36 @@ def ProcessProdcut(d, r, s, K):
                 c[i][j]=c[i-1][j]
     return [c[n-1][K], getUsedItems(r,c)]
 
-def plot_schedule(process_orders):
-    import numpy as np
-    from matplotlib import pyplot as plt
+def plot_schedule(list_process_orders, products):
     colors = ["r","g","b","y"]
-    values = np.array(process_orders)
-    bottoms = np.arange(len([0]))
-    print(process_orders)
-    for i, order in enumerate(process_orders):
-        value = order[2]
-        left = order[1]
-        plt.bar(left=left, height=0.01, width=value, bottom=bottoms, 
-                color=colors[-i], orientation="horizontal", label='Order_%i'%order[0])
-    plt.yticks(bottoms+0.4, ["data %d" % (t+1) for t in bottoms])
+    values = np.array(list_process_orders)
+    fig = plt.figure(figsize=(12, 3))
+    ax1 = fig.add_subplot(111)
+    left = 0
+    color_index = -1
+    plt.axvline(x=left, color='black')
+    for j, process_orders in enumerate(list_process_orders):
+        for i, order in enumerate(process_orders):
+            value = order[1]
+            if color_index != -1:
+                setupTime = [product.setupTime for product in products if product.index == color_index]
+            else:
+                setupTime = [product.setupTime for product in products if product.index == order[3]]
+            setupTime = setupTime[0]
+            if color_index != order[3]:
+                value = order[1]-setupTime
+                plt.axvline(x=left, color='yellow')
+                left += setupTime
+                plt.axvline(x=left, color='yellow')
+            color_index = order[3]
+            ax1.barh(y=0,left=left, width=value, linewidth=0.5, 
+                    color=colors[color_index])
+            left += value
+        ax1.text(left/2, 0, "oder")
+        # plt.yticks(bottoms+0.4, ["data %d" % (t+1) for t in bottoms])
+        plt.axvline(x=left, color='black')
     plt.legend(loc="best", bbox_to_anchor=(1.0, 1.00))
-    plt.subplots_adjust(right=0.85)
+    # plt.subplots_adjust(right=0.85)
     plt.show()
 
 def get_clean_data(order_data, product_data):
@@ -162,8 +179,6 @@ def optimize_product(taken_products, products):
     # get Order Id in sequence
     orderIDs = list(OrderedDict.fromkeys([order[0] for order in taken_products]))
     # Find Common Product between Order1 and following Order 2
-    print("We should run following ORDERS: ")
-    print(orderIDs)
     common_products = []
     for i, orderID in enumerate(orderIDs):
         if i<(len(orderIDs)-1):
@@ -214,8 +229,7 @@ def optimize_product(taken_products, products):
             except:
                 pass
         combined_sequence.append(other)
-    print("PRODUCT Run Sequence")
-    print(combined_sequence)
+    return orderIDs, combined_sequence
     
     
 if __name__ == '__main__':
@@ -229,6 +243,29 @@ if __name__ == '__main__':
         products, orders, processed_orders, combined_orders= get_clean_data(input_data, product_data)
         taken=solve(combined_orders)
         taken_products = [order for order in processed_orders if taken[order[0]]==1]
-        schedule=optimize_product(taken_products, products)
+        orderIDs, combined_sequence=optimize_product(taken_products, products)
+        print("\nTAKEN ORDERS")
+        print(taken_products)
+        print("\We should run following ORDERS: ")
+        print(orderIDs)
+        print("\nPRODUCT Run Sequence")
+        print(combined_sequence)
+        print("\nORDERS")
+        print(orders)
+        print("\nProducts")
+        print(products)
+        new_list = []
+        # Re-arrage taken orders
+        for i, orderID in enumerate(orderIDs):
+            new_list.append([order for order in taken_products if order[0]==orderID])
+        # Sort new_list as per combined_sequence
+        print("New LIST")
+        print(new_list)
+        final_list = []
+        for i, item in enumerate(new_list):
+            final_list.append(sorted(item, key=lambda x: combined_sequence[i].index(x[3])))
+        print("\nFinal LIST")
+        print(final_list)
+        plot_schedule(final_list, products)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
