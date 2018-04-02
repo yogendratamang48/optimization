@@ -100,20 +100,26 @@ def ProcessProdcut(d, r, s, K):
                 c[i][j]=c[i-1][j]
     return [c[n-1][K], getUsedItems(r,c)]
 
-def plot_schedule(list_process_orders, products):
+def plot_schedule(list_process_orders, products, orderIDs):
     import matplotlib.patches as mpatches
     # make sure colors is greater than number of products
     colors = ["r","g","b","y", "c", "m", "w"]
+    hatches=('-', '+', 'x', '\\', '*', 'o', 'O', '.')
+
     values = np.array(list_process_orders)
     fig = plt.figure(figsize=(10, 5))
     ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212)
     left = 0
     color_index = -1
     start = 0
-    x_ticks = []
-    plt.axvline(x=left, color='black')
+    x_ticks = [0]
+    ax1.axvline(x=left, color='black')
     for j, process_orders in enumerate(list_process_orders):
+        order_width = 0
+        order_index = -1
         for i, order in enumerate(process_orders):
+            order_index = order[0]
             value = order[1]
             if i ==0:
                 start=left
@@ -124,10 +130,10 @@ def plot_schedule(list_process_orders, products):
             setupTime = setupTime[0]
             if color_index != order[3]:
                 value = order[1]-setupTime
-                plt.axvline(x=left, color='yellow')
+                ax1.axvline(x=left, color='yellow')
                 x_ticks.append(left)
                 left += setupTime
-                plt.axvline(x=left, color='yellow')
+                ax1.axvline(x=left, color='yellow')
                 x_ticks.append(left)
             color_index = order[3]
             x_ticks.append(left)
@@ -135,20 +141,34 @@ def plot_schedule(list_process_orders, products):
                     color=colors[color_index])
             left += value
             x_ticks.append(left)
-        ax1.text((start+left)/2, 0, "Order_%i"%color_index, size=8, ha='center')
-        plt.axvline(x=left, color='black')
+        ax1.text((start+left)/2, 0, "Order_%i"%order_index, size=8, ha='center')
+        ax1.axvline(x=left, color='black')
+        order_width = left-start
+        ax2.barh(y=0,left=start, width=order_width, linewidth=0.5,
+                 label='Order_%i'%order_index,
+                 hatch=hatches[j])
     new_x_ticks = x_ticks
-    ax1.get_yaxis().set_visible(False)
     ax1.set_xticks(new_x_ticks)
-    plt.xlim(xmin=0)
-    plt.xlabel("Orders with time")
+    ax2.set_xticks(new_x_ticks)
+
+    ax1.set_yticks([])
+    ax2.set_yticks([])
+
+    ax1.set_xlim(xmin=0)
+    ax2.set_xlim(xmin=0)
+
+    ax2.set_xlabel("Orders with time")
+    ax1.set_ylabel("Machine 0")
+    ax2.set_ylabel("Machine 0")
+
     # Legend For Colors
     patch_list = []
     for product,color in zip(products, colors):
         data_key = mpatches.Patch(color=color, label=product.name)
         patch_list.append(data_key)
-    plt.legend(handles=patch_list,loc="best", bbox_to_anchor=(1.0, 1.00))
-    # plt.subplots_adjust(right=0.85)
+    ax1.legend(handles=patch_list,loc="best", bbox_to_anchor=(1.0, 1.00))
+
+    ax2.legend(loc="best", bbox_to_anchor=(1.0, 1.00))
     plt.show()
 
 def get_clean_data(order_data, product_data):
@@ -285,6 +305,6 @@ if __name__ == '__main__':
             final_list.append(sorted(item, key=lambda x: combined_sequence[i].index(x[3])))
         print("\nFinal LIST")
         print(final_list)
-        plot_schedule(final_list, products)
+        plot_schedule(final_list, products, orderIDs)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
