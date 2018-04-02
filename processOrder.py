@@ -161,6 +161,10 @@ def plot_schedule(list_process_orders, products, orderIDs):
     ax1.set_ylabel("Machine 0")
     ax2.set_ylabel("Machine 0")
 
+    #set titles
+    ax1.set_title('Product-wise schedule')
+    ax2.set_title('Order_wise schedule')
+
     # Legend For Colors
     patch_list = []
     for product,color in zip(products, colors):
