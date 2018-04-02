@@ -101,16 +101,22 @@ def ProcessProdcut(d, r, s, K):
     return [c[n-1][K], getUsedItems(r,c)]
 
 def plot_schedule(list_process_orders, products):
-    colors = ["r","g","b","y"]
+    import matplotlib.patches as mpatches
+    # make sure colors is greater than number of products
+    colors = ["r","g","b","y", "c", "m", "w"]
     values = np.array(list_process_orders)
-    fig = plt.figure(figsize=(12, 3))
-    ax1 = fig.add_subplot(111)
+    fig = plt.figure(figsize=(10, 5))
+    ax1 = fig.add_subplot(211)
     left = 0
     color_index = -1
+    start = 0
+    x_ticks = []
     plt.axvline(x=left, color='black')
     for j, process_orders in enumerate(list_process_orders):
         for i, order in enumerate(process_orders):
             value = order[1]
+            if i ==0:
+                start=left
             if color_index != -1:
                 setupTime = [product.setupTime for product in products if product.index == color_index]
             else:
@@ -119,16 +125,29 @@ def plot_schedule(list_process_orders, products):
             if color_index != order[3]:
                 value = order[1]-setupTime
                 plt.axvline(x=left, color='yellow')
+                x_ticks.append(left)
                 left += setupTime
                 plt.axvline(x=left, color='yellow')
+                x_ticks.append(left)
             color_index = order[3]
+            x_ticks.append(left)
             ax1.barh(y=0,left=left, width=value, linewidth=0.5, 
                     color=colors[color_index])
             left += value
-        ax1.text(left/2, 0, "oder")
-        # plt.yticks(bottoms+0.4, ["data %d" % (t+1) for t in bottoms])
+            x_ticks.append(left)
+        ax1.text((start+left)/2, 0, "Order_%i"%color_index, size=8, ha='center')
         plt.axvline(x=left, color='black')
-    plt.legend(loc="best", bbox_to_anchor=(1.0, 1.00))
+    new_x_ticks = x_ticks
+    ax1.get_yaxis().set_visible(False)
+    ax1.set_xticks(new_x_ticks)
+    plt.xlim(xmin=0)
+    plt.xlabel("Orders with time")
+    # Legend For Colors
+    patch_list = []
+    for product,color in zip(products, colors):
+        data_key = mpatches.Patch(color=color, label=product.name)
+        patch_list.append(data_key)
+    plt.legend(handles=patch_list,loc="best", bbox_to_anchor=(1.0, 1.00))
     # plt.subplots_adjust(right=0.85)
     plt.show()
 
