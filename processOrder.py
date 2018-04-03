@@ -5,8 +5,8 @@ from collections import namedtuple
 from collections import OrderedDict
 import numpy as np
 from matplotlib import pyplot as plt
-# import pudb
-# pudb.set_trace()
+import pudb
+pudb.set_trace()
 # Values == requiredTime
 # weights =  deadline
 Item = namedtuple("Item", ['index','requiredTime', 'deadline'])
@@ -176,7 +176,7 @@ def plot_schedule(list_process_orders, products, orderIDs):
     ax2.legend(loc="best", bbox_to_anchor=(1.0, 1.00))
     plt.show()
 
-def get_clean_data(order_data, product_data):
+def get_clean_data(order_data, product_data, capacity=None):
     product_lines = product_data.split('\n')
     product_count = len(product_lines)-1
     products = []
@@ -191,6 +191,8 @@ def get_clean_data(order_data, product_data):
         lines = order_lines[i].split(',')
         orders.append(Order(int(lines[0]), int(lines[1]), int(lines[2]),
                             int(lines[3]), int(lines[4])))
+    if capacity is not None:
+        orders = [order for order in orders if order.deadline<=capacity]
     processed_orders = []
     for order in orders:
         # in format Order(requiredTime, deadline)
@@ -297,12 +299,14 @@ if __name__ == '__main__':
             input_data = input_data_file.read()
         with open("data/products.txt", 'r') as product_file:
             product_data= product_file.read()
-        products, orders, processed_orders, combined_orders= get_clean_data(input_data, product_data)
+        products, orders, processed_orders, combined_orders = get_clean_data(input_data, product_data, capacity)
         if capacity is None:
             taken=solve(combined_orders)
         else:
             taken=solve(combined_orders, capacity=capacity)
-        taken_products = [order for order in processed_orders if taken[order[0]]==1]
+
+        taken_list = [order[0] for i,order in enumerate(combined_orders) if taken[i]==1]
+        taken_products = [order for order in processed_orders if order[0] in taken_list]
         orderIDs, combined_sequence=optimize_product(taken_products, products)
         print("\nTAKEN ORDERS")
         print(taken_products)
