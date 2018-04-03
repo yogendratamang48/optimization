@@ -22,6 +22,7 @@ def solve(input_data, capacity=None):
     requiredTimes = [data[1] for data in input_data]
     if capacity is None:
         capacity=max(deadlines)
+        #capacity = sum(requiredTimes)
 
     [value, taken] = ProcessOrder( deadlines, requiredTimes, capacity)
     # prepare the solution in the specified output format
@@ -229,17 +230,25 @@ def optimize_product(taken_products, products):
             next_products = set([taken[3] for taken in taken_products if taken[0]==orderIDs[i+1]])
             common_products.append(current_products & next_products)
     common_products = list(common_products)
+    print('\nCommon Products')
+    print(common_products)
 
     # 2. find product of maximum setUpTime
     transitions = []
+    last_item = None
     for i, common in enumerate(common_products):
-        if common not in transitions:
-            common = list(common)
-            maxProductID=getProductWithMaxSetupTime(common, products)
+        if i!=0:
+            last_item = transitions[i-1]
+        maxProductID=getProductWithMaxSetupTime(common, products)
+        if [maxProductID] == last_item:
+            transitions.append([])
+        else:
             transitions.append([maxProductID])
 
     # Find Product with minimum setUpTime from remaining productID for every
     # order
+    print('\nTransitions')
+    print(transitions)
     orders = taken_products
     otherProducts=[]
     for i, orderID in enumerate(orderIDs):
@@ -279,36 +288,43 @@ if __name__ == '__main__':
     import sys
     if len(sys.argv) > 1:
         file_location = sys.argv[1].strip()
+        capacity=None
+        try:
+            capacity = int(sys.argv[2].strip())
+        except:
+            pass
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
         with open("data/products.txt", 'r') as product_file:
             product_data= product_file.read()
         products, orders, processed_orders, combined_orders= get_clean_data(input_data, product_data)
-        taken=solve(combined_orders)
+        if capacity is None:
+            taken=solve(combined_orders)
+        else:
+            taken=solve(combined_orders, capacity=capacity)
         taken_products = [order for order in processed_orders if taken[order[0]]==1]
         orderIDs, combined_sequence=optimize_product(taken_products, products)
         print("\nTAKEN ORDERS")
         print(taken_products)
-        print("\We should run following ORDERS: ")
+        print("\nWe should run following ORDERS: ")
         print(orderIDs)
-        print("\nPRODUCT Run Sequence")
-        print(combined_sequence)
-        print("\nORDERS")
-        print(orders)
-        print("\nProducts")
-        print(products)
+        print("\nPRODUCT Run Sequence- Combined Sequence")
+        for item in combined_sequence:
+            print(item)
         new_list = []
         # Re-arrage taken orders
         for i, orderID in enumerate(orderIDs):
             new_list.append([order for order in taken_products if order[0]==orderID])
         # Sort new_list as per combined_sequence
-        print("New LIST")
-        print(new_list)
+        print("\nNew LIST")
+        for item in new_list:
+            print(item)
         final_list = []
         for i, item in enumerate(new_list):
             final_list.append(sorted(item, key=lambda x: combined_sequence[i].index(x[3])))
         print("\nFinal LIST")
-        print(final_list)
+        for item in final_list:
+            print(item)
         plot_schedule(final_list, products, orderIDs)
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/order_4)')
